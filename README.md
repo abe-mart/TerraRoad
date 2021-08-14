@@ -8,7 +8,7 @@ TerraRoad is a Terragen road creator!  It combines a heightfield exported from T
 
 To use TerraRoad, you'll need Python installed on your computer.  On Windows, Python can be obtained easily through the [Microsoft Store](https://www.microsoft.com/en-us/p/python-39/9p7qfqmjrfp7).  For installation on Mac or Linux, see [python.org](https://www.python.org/downloads/).
 
-Once Python is installed, open the command prompt and use the Python package manager [pip](https://pip.pypa.io/en/stable/) to install the packages needed to run TerraRoad.
+Once Python is installed, open the command prompt (not IDLE) and use the Python package manager [pip](https://pip.pypa.io/en/stable/) to install the packages needed to run TerraRoad.
 
 ```bash
 pip install pysimplegui imageio numpy scipy scikit-image scikit-learn svgpathtools
