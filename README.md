@@ -37,7 +37,7 @@ then I used the Pen tool in "Smart Mode" to create a path along the terrain.  I 
 except for the path (not sure if this is necessary), and saved as an SVG file.
 
 ### Using TerraRoad
-Once the input files are ready, launch TerraRoad from the TerraRoad.exe executable.  You should see a little
+Once the input files are ready, launch TerraRoad it's python script as described above.  You should see a little
 window appear with some buttons and sliders.  Use the buttons to select your EXR and SVG, and then select a folder
 where the output files will be placed.  Click 'Create Road', and wait for your road to build.  This can take several minutes
 depending on your settings and heightfield resolution.  The output folder should open automatically when complete.
