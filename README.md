@@ -20,13 +20,13 @@ Now you are ready to download TerraRoad.  TerraRoad is contained in a single Pyt
 python TerraRoad.py
 ```
 
-![TerraRoad UI](Images/UI.jpg)
+![TerraRoad UI](Images/UI.PNG)
 
 ## Usage
 
 ## Example Files
 
-![Heightfield Node](./Images/Tutorial1.jpg)
+![Heightfield Node](./Images/Tutorial1.PNG)
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
