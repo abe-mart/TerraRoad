@@ -2,7 +2,7 @@
 
 TerraRoad is a Terragen road creator!  It combines a heightfield exported from Terragen with an svg path defining a road shape, and creates a new heightfield with the road path leveled and smoothed.  The tool also creates a variety of masks that can be used in Terragen for shading the road and shoulder.  
 
-![Road picture in Terragen](./Images/RoadSampleSmall.jpg)
+![Road picture in Terragen](Images/RoadSampleSmall.jpg)
 
 ## Installation
 
@@ -20,7 +20,7 @@ Now you are ready to download TerraRoad.  TerraRoad is contained in a single Pyt
 python TerraRoad.py
 ```
 
-![TerraRoad UI](./Images/UI.jpg)
+![TerraRoad UI](Images/UI.jpg)
 
 ## Usage
 
