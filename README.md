@@ -14,7 +14,7 @@ Once Python is installed, open the command prompt and use the Python package man
 pip install pysimplegui imageio numpy scipy scikit-image scikit-learn svgpathtools
 ```
 
-Now you are ready to download TerraRoad.  TerraRoad is contained in a single Python script, TerraRoad.py, which you can download by clicking the green 'Code' button above, and then 'Download ZIP'.  Unzip the folder, and navigate to the unzipped folder in your command prompt.  Launch TerraRoad by running:
+Now you are ready to download TerraRoad.  TerraRoad is contained in a single Python script, *TerraRoad.py*, which you can download by clicking the green 'Code' button above, and then 'Download ZIP'.  Unzip the folder, and navigate to the unzipped folder in your command prompt.  Launch TerraRoad by running:
 
 ```
 python TerraRoad.py
