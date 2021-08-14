@@ -24,7 +24,47 @@ python TerraRoad.py
 
 ## Usage
 
+### Input files
+TerraRoad requires two input files.  
+* The first is a heightfield in .exr format.  This can be obtained in Terragen 
+by connecting a terrain to the Shader input of the 'Heightfield Generate Node', 
+generating a heightfield, and then right clicking the node and saving as EXR.
+I recommend starting out with a 1 pixel/meter resolution, since all TerraRoad measurements are
+in pixels.
+* The second input is an SVG file with a single path (for now) defining the road shape.  I created
+mine in Affinity Photo.  First I converted my heightfield EXR to a JPEG so I could see it better,
+then I used the Pen tool in "Smart Mode" to create a path along the terrain.  I then hid all the layers
+except for the path (not sure if this is necessary), and saved as an SVG file.
+
+### Using TerraRoad
+Once the input files are ready, launch TerraRoad from the TerraRoad.exe executable.  You should see a little
+window appear with some buttons and sliders.  Use the buttons to select your EXR and SVG, and then select a folder
+where the output files will be placed.  Click 'Create Road', and wait for your road to build.  This can take several minutes
+depending on your settings and heightfield resolution.  The output folder should open automatically when complete.
+
+### Output Files
+Eventually there will be docs with some pictures explaining these better.
++ terrain_with_road.tif - Heightfield with road added, ready for import into Terragen.
++ masks_road - Mask of road surface
++ masks_shoulder - Mask of road surface and shoulder
++ masks_shoulder_fade - Soft mask of road surface, and shoulder with gradient reaching only to the road
++ masks_road_and_shoulder_fade - Soft mask of road and shoulder with gradient reaching all the way to the center
++ masks_center_line - Mask for center paint line
++ masks_center_line_with_dashes - Mask for dashed version of center paint line
++ masks_side_lines - Mask for two lines on side of road
++ masks_cut - Mask for shoulder area above the road surface
++ masks_fill - Mask for shoulder area below the road surface
+
+### Settings
+Future versions will expose more settings.  These are the basics.
++ Road Width - Width in pixels of the area that will be leveled along the svg path.
++ Shoulder Width - Width in pixels (from the road center) of the area that will be smoothed and blended along the edge of the road.
++ Elevation Smoothing - Controls how closely the road will follow displacements in the terrain.  High values will cause the road to cut through mountains and bridge valleys.
++ Mask Upscaling - Mask resolution will be this value multiplied by the 
+
 ## Example Files
+
+There are some example files included, a sample road svg, and a basic Terragen scene showing some ideas for using the resulting masks.  To generate a heightfile from the sample scene, open the node 'Heightfield generate 01', and click Generate Now.  Then right click on the node, and click 'Save file as' and save as an EXR image.  For more help on exporting terrains from Terragen, see [this video](https://www.youtube.com/watch?v=NTlhqIs89ZI&ab_channel=TerraTuts).
 
 ![Heightfield Node](./Images/Tutorial1.PNG)
 
