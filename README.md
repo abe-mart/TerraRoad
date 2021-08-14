@@ -22,6 +22,8 @@ python TerraRoad.py
 
 ![TerraRoad UI](Images/UI.PNG)
 
+You can also run TerraRoad through IDLE or your favorite Python IDE.  
+
 ## Usage
 
 ### Input files
