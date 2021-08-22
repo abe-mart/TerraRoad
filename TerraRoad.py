@@ -38,12 +38,14 @@ def offset_curve(path, offset_distance, steps=1000):
 sg.theme('Dark Grey 2')  
 
 layout = [[sg.Text('Select Input Files',font='underline')],
-          [sg.Text('Terrain (EXR)', size=(15, 1)), sg.InputText(), sg.FileBrowse(key='file_name_ter')],
-          [sg.Text('Road Shape (SVG) ', size=(15, 1)), sg.InputText(), sg.FileBrowse(key='file_name_road')],
+          [sg.Text('Terrain (EXR)', size=(15, 1)), sg.InputText(), sg.FileBrowse(key='file_name_ter',file_types=(("EXR Terrain Files", "*.exr"),))],
+          [sg.Text('Road Shape (SVG) ', size=(15, 1)), sg.InputText(), sg.FileBrowse(key='file_name_road',file_types=(("Road Path SVG", "*.svg"),))],
           [sg.Text('Select Output Folder',font='underline')],
           [sg.Text('Output Folder', size=(15, 1)), sg.InputText(), sg.FolderBrowse(key='path')],
           [sg.Text('Settings')]]
 
+# Basic Settings
+layout1 = []
 settings = [['road_width',5,100,20],
             ['shoulder_width',0,200,100],
             ['elevation_smoothing',25,300,150],
@@ -54,11 +56,32 @@ for row in settings:
     minV = row[1]
     maxV = row[2]
     default = row[3]
-    layout += [[sg.Text(setting.replace('_',' ').title(), size=(15,1)), sg.Slider(range=(minV,maxV),default_value=default,orientation='horizontal',key=setting)]]
+    layout1 += [[sg.Text(setting.replace('_',' ').title(), size=(15,1)), sg.Slider(range=(minV,maxV),default_value=default,orientation='horizontal',key=setting)]]
+    
+# Advanced Settings
+layout2 = []
+settings = [['road_segments',5,500,400],
+            ['edge_segments',5,100,25],
+            ['local_elevation_smoothing',1,5,3],
+            ['shoulder_smoothing',1,10,5],
+            ['center_line_width',1,5,1],
+            ['side_line_width',1,5,2],
+            ['side_line_offset',1,100,8],
+            ['mask_smoothing',1,10,5],
+            ['dash_multiplier',1,50,20]]
+for row in settings:
+    setting = row[0]
+    minV = row[1]
+    maxV = row[2]
+    default = row[3]
+    layout2 += [[sg.Text(setting.replace('_',' ').title(), size=(20,1)), sg.Slider(range=(minV,maxV),default_value=default,orientation='horizontal',key=setting)]]
+    
+tbgrp = [[sg.TabGroup([[sg.Tab('Basic Settings',layout1),sg.Tab('Advanced Settings',layout2)]])]]   
+
+layout += [[tbgrp]]
     
 layout += [[sg.Button('Create Road'), sg.Button('Exit')]]
 layout += [[sg.Text('Awaiting Input',key='STATUS')]]
-# layout += [[[sg.ProgressBar(1000, orientation='h', size=(45, 20), key='progressbar')]]]
 
 window = sg.Window('TerraRoad', layout)
 
@@ -72,24 +95,24 @@ while True:  # Event Loop
     if event == 'Create Road':  ######################## MAIN ROAD CREATOR SCRIPT
         window['STATUS'].update('Starting')
         
-        # Get values
+        # Get values from input form
         path = values['path']
         file_name_ter = values['file_name_ter']
         file_name_road = values['file_name_road']
         road_width = int(values['road_width'])
         border_width = int(values['shoulder_width'])
-        road_segments = 400
-        edge_segments = 25
+        road_segments = int(values['road_segments'])
+        edge_segments = int(values['edge_segments'])
         elevation_smoothing = int(values['elevation_smoothing'])
-        elevation_smoothing_local = 3
-        shoulder_smoothing = 5
+        elevation_smoothing_local = int(values['local_elevation_smoothing'])
+        shoulder_smoothing = int(values['shoulder_smoothing'])
         texture_upscale = int(values['texture_upscale'])
-        center_line_width = road_width/20
-        side_line_width = road_width/10
-        side_line_offset = road_width/2-2
-        mask_smoothing = 2
+        center_line_width = int(values['center_line_width'])
+        side_line_width = int(values['side_line_width'])
+        side_line_offset = int(values['side_line_offset'])
+        mask_smoothing = int(values['mask_smoothing'])
         dash_spacing = int(values['dash_spacing'])
-        dash_mult = 5
+        dash_mult = int(values['dash_multiplier'])
         
         # Read Terrain
         print('Importing Terrain')
@@ -127,6 +150,7 @@ while True:  # Event Loop
         # Extract path altitudes
         pathval = mat[road[:,1],road[:,0]]
         
+        # Smooth elevation along road path
         roadsmth = ndimage.gaussian_filter1d(pathval, elevation_smoothing)
         
         # Get road and shoulder surfaces
@@ -146,15 +170,11 @@ while True:  # Event Loop
         rR = offset_curve(P,-road_width/2,edge_segments)
         rLL = offset_curve(P,border_width/2,edge_segments)
         rRR = offset_curve(P,-border_width/2,edge_segments)
-        rsLL = offset_curve(P,side_line_offset+side_line_width/2,edge_segments)
-        rsLR = offset_curve(P,side_line_offset-side_line_width/2,edge_segments)
-        rsRL = offset_curve(P,-side_line_offset+side_line_width/2,edge_segments)
-        rsRR = offset_curve(P,-side_line_offset-side_line_width/2,edge_segments)
         
         print('Processing Road')
         window['STATUS'].update('Building Road')
         for i in range(len(rL)):
-            progress = sg.OneLineProgressMeter('My Meter', i+1, len(rL),  '', 'Building Road',orientation='h')
+            progress = sg.OneLineProgressMeter('My Meter', i+1, len(rL),  '', 'Building Road',orientation='h',key='build_progress')
             if progress == False:
                 break
             
@@ -189,36 +209,6 @@ while True:  # Event Loop
             rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
             rmaskBig[rsxBig,rsyBig] = 1
             
-            # Side Line Left
-            bp1 = rsLL[i].point(np.linspace(0,1,3))
-            bpx1 = np.real(bp1)
-            bpy1 = np.imag(bp1)
-            bp2 = rsLR[i].point(np.linspace(0,1,3))
-            bpx2 = np.flip(np.real(bp2))
-            bpy2 = np.flip(np.imag(bp2))
-            # Higher res line
-            bpx1 = bpx1 * texture_upscale
-            bpx2 = bpx2 * texture_upscale
-            bpy1 = bpy1 * texture_upscale
-            bpy2 = bpy2 * texture_upscale
-            rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
-            rsmaskBig[rsxBig,rsyBig] = 1
-            
-            # Side Line Right
-            bp1 = rsRL[i].point(np.linspace(0,1,3))
-            bpx1 = np.real(bp1)
-            bpy1 = np.imag(bp1)
-            bp2 = rsRR[i].point(np.linspace(0,1,3))
-            bpx2 = np.flip(np.real(bp2))
-            bpy2 = np.flip(np.imag(bp2))
-            # Higher res line
-            bpx1 = bpx1 * texture_upscale
-            bpx2 = bpx2 * texture_upscale
-            bpy1 = bpy1 * texture_upscale
-            bpy2 = bpy2 * texture_upscale
-            rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
-            rsmaskBig[rsxBig,rsyBig] = 1
-            
             # Get shoulder distances to center line
             dist_s = distance.cdist(np.c_[rss[:,1],rss[:,0]],road,'euclidean')
             idx_min = np.argmin(dist_s,axis=1)
@@ -251,7 +241,11 @@ while True:  # Event Loop
             
             # Apply road surface
             mat[rsx,rsy] = hvals
-            
+           
+        # Make sure progress bar window closed
+        sg.OneLineProgressMeterCancel('build_progress')
+        window['STATUS'].update('Starting textures')
+        
         # Dashed Center Line
         print('Dashing center line')
         window['STATUS'].update('Dashing center line')
@@ -259,6 +253,10 @@ while True:  # Event Loop
         rcR = offset_curve(P,-center_line_width/2,edge_segments*dash_mult)   
         dash = np.zeros(len(rcL))
         dash[0:-1:dash_spacing] = 1
+        rsLL = offset_curve(P,side_line_offset+side_line_width/2,edge_segments*dash_mult)
+        rsLR = offset_curve(P,side_line_offset-side_line_width/2,edge_segments*dash_mult)
+        rsRL = offset_curve(P,-side_line_offset+side_line_width/2,edge_segments*dash_mult)
+        rsRR = offset_curve(P,-side_line_offset-side_line_width/2,edge_segments*dash_mult)
         for i in range(len(rcL)):
             # Center Line
             bp1 = rcL[i].point(np.linspace(0,1,3))
@@ -275,6 +273,36 @@ while True:  # Event Loop
             rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
             rcmaskBigDash[rsxBig,rsyBig] = 1*dash[i]
             rcmaskBig[rsxBig,rsyBig] = 1
+            
+            # Side Line Left
+            bp1 = rsLL[i].point(np.linspace(0,1,3))
+            bpx1 = np.real(bp1)
+            bpy1 = np.imag(bp1)
+            bp2 = rsLR[i].point(np.linspace(0,1,3))
+            bpx2 = np.flip(np.real(bp2))
+            bpy2 = np.flip(np.imag(bp2))
+            # Higher res line
+            bpx1 = bpx1 * texture_upscale
+            bpx2 = bpx2 * texture_upscale
+            bpy1 = bpy1 * texture_upscale
+            bpy2 = bpy2 * texture_upscale
+            rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
+            rsmaskBig[rsxBig,rsyBig] = 1
+            
+            # Side Line Right
+            bp1 = rsRL[i].point(np.linspace(0,1,3))
+            bpx1 = np.real(bp1)
+            bpy1 = np.imag(bp1)
+            bp2 = rsRR[i].point(np.linspace(0,1,3))
+            bpx2 = np.flip(np.real(bp2))
+            bpy2 = np.flip(np.imag(bp2))
+            # Higher res line
+            bpx1 = bpx1 * texture_upscale
+            bpx2 = bpx2 * texture_upscale
+            bpy1 = bpy1 * texture_upscale
+            bpy2 = bpy2 * texture_upscale
+            rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
+            rsmaskBig[rsxBig,rsyBig] = 1
             
                     
         # Smooth road surface and shoulder
