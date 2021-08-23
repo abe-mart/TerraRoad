@@ -8,13 +8,17 @@ from scipy import ndimage
 from skimage.draw import polygon
 from svgpathtools import svg2paths2, Line, Path
 from scipy.spatial import distance
-from sklearn.preprocessing import minmax_scale
+# from sklearn.preprocessing import minmax_scale
 from scipy.ndimage import gaussian_filter
 from os.path import join
 import webbrowser
 
 # Define utility functions for later
 def smoothclamp(x, mi, mx): return mi + (mx-mi)*(lambda t: np.where(t < 0 , 0, np.where( t <= 1 , 3*t**2-2*t**3, 1 ) ) )( (x-mi)/(mx-mi) )
+
+def minmax_scale(array):
+    return (array - array.min(axis=0))/(array.max(axis=0) - array.min(axis=0))
+    
 
 def offset_curve(path, offset_distance, steps=1000):
     """Takes in a Path object, `path`, and a distance,
@@ -217,7 +221,6 @@ while True:  # Event Loop
             clamped_scaled = minmax_scale(clamped)
             clipped = dist_min
             clipped[clipped < road_width/2] = road_width/2
-            # clip_scale = minmax_scale(clipped)
             ffull = 1-minmax_scale(dist_min)
             fade = 1-clamped_scaled
             fmask[rss[:,0],rss[:,1]] = fade
