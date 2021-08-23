@@ -11,7 +11,7 @@ To use TerraRoad, you'll need Python installed on your computer.  On Windows, Py
 Once Python is installed, open the command prompt (not IDLE) and use the Python package manager [pip](https://pip.pypa.io/en/stable/) to install the packages needed to run TerraRoad.
 
 ```bash
-pip install pysimplegui imageio numpy scipy scikit-image scikit-learn svgpathtools
+pip install pysimplegui imageio numpy scipy scikit-image svgpathtools
 ```
 
 Now you are ready to download TerraRoad.  TerraRoad is contained in a single Python script, *TerraRoad.py*, which you can download by clicking the green 'Code' button above, and then 'Download ZIP'.  Unzip the folder, and navigate to the unzipped folder in your command prompt.  Launch TerraRoad by running:
