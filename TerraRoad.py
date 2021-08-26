@@ -10,7 +10,7 @@ from svgpathtools import svg2paths2, Line, Path
 from scipy.spatial import distance
 # from sklearn.preprocessing import minmax_scale
 from scipy.ndimage import gaussian_filter
-from os.path import join
+from os.path import join, basename
 import webbrowser
 
 # Define utility functions for later
@@ -38,12 +38,21 @@ def offset_curve(path, offset_distance, steps=1000):
     offset_path = Path(*connect_the_dots)
     return offset_path
 
+def place(elem):
+    '''
+    Places element provided into a Column element so that its placement in the layout is retained.
+    :param elem: the element to put into the layout
+    :return: A column element containing the provided element
+    '''
+    return sg.Column([[elem]], pad=(0,0))
+
 # Set up GUI layout
 sg.theme('Dark Grey 2')  
 
 layout = [[sg.Text('Select Input Files',font='underline')],
-          [sg.Text('Terrain (EXR)', size=(15, 1)), sg.InputText(), sg.FileBrowse(key='file_name_ter',file_types=(("EXR Terrain Files", "*.exr"),))],
+          [sg.Text('Terrain (EXR)', size=(15, 1)), sg.InputText(), sg.FileBrowse(key='file_name_ter',file_types=(("EXR Terrain Files", "*.exr"),),enable_events=True)],
           [sg.Text('Road Shape (SVG) ', size=(15, 1)), sg.InputText(), sg.FileBrowse(key='file_name_road',file_types=(("Road Path SVG", "*.svg"),))],
+          [sg.Button('Save Terrain as JPEG',key='jpg'),sg.Text('Select Terrain and Output Folder first.',key='jpgtext')],
           [sg.Text('Select Output Folder',font='underline')],
           [sg.Text('Output Folder', size=(15, 1)), sg.InputText(), sg.FolderBrowse(key='path')],
           [sg.Text('Settings')]]
@@ -94,6 +103,24 @@ window = sg.Window('TerraRoad', layout)
 while True:  # Event Loop
     event, values = window.read()
     print(event, values)
+    if event == 'jpg':
+        if not (values['file_name_ter'] and values['path']):
+            print('ERROR')
+            print('Please select terrain file and output folder first.')
+        else:
+            print(values['path'])
+            # Read Terrain
+            file_name_ter = values['file_name_ter']
+            path = values['path']
+            mat = imageio.imread(file_name_ter)
+            
+            # Normalize Terrain
+            mat_norm = (mat + np.abs(np.min(mat)))/ np.max(mat + np.abs(np.min(mat)))
+            mat_gray = mat_norm*255
+            
+            imname = basename(file_name_ter).split('.')[0] + '.jpg'
+            imageio.imwrite(join(path,imname),(mat_gray).astype(np.uint8))
+            window['jpgtext'].update('Saved as ' + imname)
     if event == sg.WIN_CLOSED or event == 'Exit':
         break
     if event == 'Create Road':  ######################## MAIN ROAD CREATOR SCRIPT
