@@ -14,7 +14,7 @@ Once Python is installed, open the command prompt (not IDLE) and use the Python 
 pip install pysimplegui imageio numpy scipy scikit-image svgpathtools
 ```
 
-NOTE: The ImageIO library needs an additional plugin called freeimage to read EXR files.  I'll try to add an automatic check into the code for that.  Until then, you can run this code in a Python interpreter to download the plugin:
+NOTE: The ImageIO library needs an additional plugin called FreeImage to read EXR files.  TerraRoad should prompt for permission to automatically download the plugin if it is missing.  Alternatively, you can run this code in a Python interpreter to download the plugin:
 
 ```
 import imageio
