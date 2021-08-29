@@ -6,11 +6,9 @@ import imageio
 import numpy as np
 from scipy import ndimage
 from skimage.draw import polygon
-# from skimage.filters import gaussian
 from skimage.transform import resize
 from svgpathtools import svg2paths2, Line, Path
 from scipy.spatial import distance
-# from sklearn.preprocessing import minmax_scale
 from scipy.ndimage import gaussian_filter
 from os.path import join, basename
 import webbrowser
