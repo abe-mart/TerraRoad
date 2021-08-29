@@ -33,6 +33,8 @@ You can also run TerraRoad through IDLE or your favorite Python IDE.
 
 ## Usage
 
+To start using TerraRoad, check out the [documentation](https://aknight0.gitbook.io/terraroad/) and [Getting Started](https://aknight0.gitbook.io/terraroad/getting-started-1/workflow) guide.
+
 ### Input files
 TerraRoad requires two input files.  
 * The first is a heightfield in .exr format.  This can be obtained in Terragen 
