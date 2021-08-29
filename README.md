@@ -69,7 +69,7 @@ Future versions will expose more settings.  These are the basics.
 + Road Width - Width in pixels of the area that will be leveled along the svg path.
 + Shoulder Width - Width in pixels (from the road center) of the area that will be smoothed and blended along the edge of the road.
 + Elevation Smoothing - Controls how closely the road will follow displacements in the terrain.  High values will cause the road to cut through mountains and bridge valleys.
-+ Mask Upscaling - Mask resolution will be this value multiplied by the 
++ Mask Upscaling - Mask resolution will be this value multiplied by the terrain size.
 
 ## Example Files
 
