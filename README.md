@@ -1,6 +1,6 @@
 # TerraRoad
 
-TerraRoad is a Terragen road creator!  It combines a heightfield exported from Terragen with an svg path defining a road shape, and creates a new heightfield with the road path leveled and smoothed.  The tool also creates a variety of masks that can be used in Terragen for shading the road and shoulder.  
+TerraRoad is a Terragen road creator!  It combines a heightfield exported from Terragen with an svg path defining a road shape, and creates a *new heightfield* with the road path leveled and smoothed.  The tool also creates a variety of masks that can be used in Terragen for shading the road and shoulder.  
 
 ![Road picture in Terragen](Images/RoadSampleSmall.jpg)
 
@@ -14,7 +14,7 @@ Once Python is installed, open the command prompt (not IDLE) and use the Python 
 pip install pysimplegui imageio numpy scipy scikit-image svgpathtools
 ```
 
-NOTE: The ImageIO library needs an additional plugin called freeimage to read EXR files.  I'll try to add an automatic check into the code for that.  Until then, you can run this code in a Python interpreter to download the plugin:
+NOTE: The ImageIO library needs an additional plugin called FreeImage to read EXR files.  TerraRoad should prompt for permission to automatically download the plugin if it is missing.  Alternatively, you can run this code in a Python interpreter to download the plugin:
 
 ```
 import imageio
@@ -32,6 +32,8 @@ python TerraRoad.py
 You can also run TerraRoad through IDLE or your favorite Python IDE.  
 
 ## Usage
+
+To start using TerraRoad, check out the [documentation](https://aknight0.gitbook.io/terraroad/) and [Getting Started](https://aknight0.gitbook.io/terraroad/getting-started-1/workflow) guide.
 
 ### Input files
 TerraRoad requires two input files.  
