@@ -294,7 +294,7 @@ while True:  # Event Loop
             bpy1 = bpy1 * texture_upscale
             bpy2 = bpy2 * texture_upscale
             rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
-            mask_info[mask]['mat'][rsx,rsy] = 1
+            mask_info[mask]['mat'][rsxBig,rsyBig] = 1
             # rmaskBig[rsxBig,rsyBig] = 1
             
             # Get shoulder distances to center line
