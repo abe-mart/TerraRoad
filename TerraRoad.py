@@ -64,7 +64,8 @@ settings = [['road_width',5,100,20],
             ['elevation_smoothing',25,300,150],
             ['center_line_width',1,5,2],
             ['side_line_width',1,5,2],
-            ['side_line_offset',1,100,8]]
+            ['side_line_offset',1,100,8],
+            ['verge_width',5,400,200]]
 for row in settings:
     setting = row[0]
     minV = row[1]
@@ -89,7 +90,7 @@ for row in settings:
     
 # Mask Settings
 layout3 = []
-mask_names = ['road','shoulder','shoulder_fade','road_and_shlder_fade','center_line','center_dashes','side_lines','cut','fill']
+mask_names = ['road','shoulder','shoulder_fade','road_and_shlder_fade','verge','center_line','center_dashes','side_lines','cut','fill']
 for mask in mask_names:
     smoothrange = [1,2,3,4,5,6,7,8,9,10]
     resrange = [1,2,3,4,5]
@@ -183,6 +184,7 @@ while True:  # Event Loop
         side_line_offset = int(values['side_line_offset'])
         dash_spacing = int(values['dash_spacing'])
         dash_mult = int(values['dash_multiplier'])
+        verge_width = int(values['verge_width'])
         
         # Read Terrain
         print('Importing Terrain')
@@ -214,6 +216,7 @@ while True:  # Event Loop
         road = np.clip((np.c_[rx,ry]).astype(int),0,len(mat)-1)
         
         rmask = np.zeros(mat.shape)
+        # rmask[road[:,1],road[:,0]] = 1
         
         # Extract path altitudes
         pathval = mat[road[:,1],road[:,0]]
@@ -230,7 +233,7 @@ while True:  # Event Loop
             mask_info[mask]['blur'] = values[mask+'blur']
             mask_info[mask]['active'] = values[mask+'check']
             mask_info[mask]['format'] = values[mask+'format']
-            if mask in ['road','center_line','center_dashes','side_lines']:
+            if mask in ['road','center_line','center_dashes','side_lines','verge']:
                 mask_info[mask]['mat'] = np.zeros(np.multiply(mat.shape,mask_info[mask]['upscale']))
             else:
                 mask_info[mask]['mat'] = np.zeros(mat.shape)
@@ -253,6 +256,8 @@ while True:  # Event Loop
         rR = offset_curve(P,-road_width/2,edge_segments)
         rLL = offset_curve(P,border_width/2,edge_segments)
         rRR = offset_curve(P,-border_width/2,edge_segments)
+        vL = offset_curve(P,verge_width/2,edge_segments)
+        vR = offset_curve(P,-verge_width/2,edge_segments)
         
         print('Processing Road')
         window['STATUS'].update('Building Road')
@@ -272,8 +277,24 @@ while True:  # Event Loop
             rsy,rsx = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)-1)
             rss = np.c_[rsx,rsy]
             mask_info[mask]['mat'][rsx,rsy] = 1
-            # bmask[rsx,rsy] = 1
             rbmask[rsx,rsy] = 1
+            
+            # Verge
+            mask = 'verge'
+            bp1 = vL[i].point(np.linspace(0,1,3))
+            bpx1 = np.real(bp1)
+            bpy1 = np.imag(bp1)
+            bp2 = vR[i].point(np.linspace(0,1,3))
+            bpx2 = np.flip(np.real(bp2))
+            bpy2 = np.flip(np.imag(bp2))
+            # Higher res road surface
+            texture_upscale = mask_info[mask]['upscale']
+            bpx1 = bpx1 * texture_upscale
+            bpx2 = bpx2 * texture_upscale
+            bpy1 = bpy1 * texture_upscale
+            bpy2 = bpy2 * texture_upscale
+            rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
+            mask_info[mask]['mat'][rsxBig,rsyBig] = 1
             
             # Road Surface
             mask = 'road'
@@ -364,7 +385,6 @@ while True:  # Event Loop
             bpy1 = bpy1 * texture_upscale
             bpy2 = bpy2 * texture_upscale
             rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
-            # rcmaskBig[rsxBig,rsyBig] = 1
             mask_info['center_line']['mat'][rsxBig,rsyBig] = 1
             
             # Center Line with dashes
@@ -382,7 +402,6 @@ while True:  # Event Loop
             bpy1 = bpy1 * texture_upscale
             bpy2 = bpy2 * texture_upscale
             rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
-            # rcmaskBigDash[rsxBig,rsyBig] = 1*dash[i]
             mask_info['center_dashes']['mat'][rsxBig,rsyBig] = 1*dash[i]
             
             # Side Line Left
@@ -400,7 +419,6 @@ while True:  # Event Loop
             bpy1 = bpy1 * texture_upscale
             bpy2 = bpy2 * texture_upscale
             rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
-            # rsmaskBig[rsxBig,rsyBig] = 1
             mask_info['side_lines']['mat'][rsxBig,rsyBig] = 1
             
             # Side Line Right
@@ -418,7 +436,6 @@ while True:  # Event Loop
             bpy1 = bpy1 * texture_upscale
             bpy2 = bpy2 * texture_upscale
             rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
-            # rsmaskBig[rsxBig,rsyBig] = 1
             mask_info['side_lines']['mat'][rsxBig,rsyBig] = 1
             
                     
@@ -437,7 +454,7 @@ while True:  # Event Loop
         
         # Upscale remaining masks
         for mask_name in mask_info:
-            if mask_name not in ['road','center_line','center_dashes','side_lines']:
+            if mask_name not in ['road','center_line','center_dashes','side_lines','verge']:
                 mask = mask_info[mask_name]
                 mask['mat'] = resize(mask['mat'],np.multiply(mat.shape,mask['upscale']))
         
@@ -449,10 +466,11 @@ while True:  # Event Loop
             if mask['active']:
                 print('Blurring ' + mask_name)
                 mask['mat'] = gaussian_filter(mask['mat'],mask['blur'])
-
+        
         # Write Masks
         print('Exporting Masks')
         window['STATUS'].update('Exporting Masks')
+        # TODO: Only create needed masks
         for mask_name in mask_info:
             mask = mask_info[mask_name]
             print('Saving Mask: ' + mask['name'])
