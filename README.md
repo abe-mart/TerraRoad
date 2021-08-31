@@ -11,7 +11,7 @@ To use TerraRoad, you'll need Python installed on your computer.  On Windows, Py
 Once Python is installed, open the command prompt (not IDLE) and use the Python package manager [pip](https://pip.pypa.io/en/stable/) to install the packages needed to run TerraRoad.
 
 ```bash
-pip install pysimplegui imageio numpy scipy scikit-image svgpathtools
+pip install pysimplegui imageio numpy scipy scikit-image svgpathtools --no-warn-script-location
 ```
 
 NOTE: The ImageIO library needs an additional plugin called FreeImage to read EXR files.  TerraRoad should prompt for permission to automatically download the plugin if it is missing.  Alternatively, you can run this code in a Python interpreter to download the plugin:
