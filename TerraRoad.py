@@ -80,7 +80,8 @@ settings = [['road_segments',5,500,400],
             ['local_elevation_smoothing',1,5,3],
             ['shoulder_smoothing',1,10,5],
             ['dash_spacing',1,5,3],
-            ['dash_multiplier',1,50,20]]
+            ['dash_multiplier',1,50,20],
+            ['road_altitude_offset',-100,100,0]]
 for row in settings:
     setting = row[0]
     minV = row[1]
@@ -185,6 +186,7 @@ while True:  # Event Loop
         dash_spacing = int(values['dash_spacing'])
         dash_mult = int(values['dash_multiplier'])
         verge_width = int(values['verge_width'])
+        road_altitude_offset = values['road_altitude_offset']
         
         # Read Terrain
         print('Importing Terrain')
@@ -220,6 +222,9 @@ while True:  # Event Loop
         
         # Extract path altitudes
         pathval = mat[road[:,1],road[:,0]]
+        
+        # Offset path altitude (rivers, embankments)
+        pathval = pathval + road_altitude_offset
         
         # Smooth elevation along road path
         roadsmth = ndimage.gaussian_filter1d(pathval, elevation_smoothing)
