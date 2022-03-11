@@ -7,4 +7,3 @@ scipy==1.4.1
 skimage==0.0
 streamlit==1.4.0
 svgpathtools==1.4.1
-~umpy==1.18.1
