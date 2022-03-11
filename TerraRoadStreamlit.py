@@ -12,6 +12,9 @@ from scipy.ndimage import gaussian_filter
 import os
 import tempfile
 
+# Install EXR support
+imageio.plugins.freeimage.download()
+
 # Define utility functions for later
 def smoothclamp(x, mi, mx): return mi + (mx-mi)*(lambda t: np.where(t < 0 , 0, np.where( t <= 1 , 3*t**2-2*t**3, 1 ) ) )( (x-mi)/(mx-mi) )
 
