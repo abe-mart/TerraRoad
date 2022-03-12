@@ -11,6 +11,8 @@ from scipy.spatial import distance
 from scipy.ndimage import gaussian_filter
 import os
 import tempfile
+from copy import deepcopy
+from zipfile import ZipFile
 
 # Initialization
 if 'firstRun' not in st.session_state:
@@ -55,7 +57,7 @@ def load_image(image_file):
 
 @st.cache
 def load_array(image_file):
-    st.write(image_file)
+    # st.write(image_file)
     array = imageio.imread(image_file)
     # img = Image.fromarray(array).convert('RGB')
     return array
@@ -86,6 +88,20 @@ def prep_array_download(array):
     # array = imageio.imread(image_file)
     temp = io.BytesIO()
     imageio.imwrite(temp,array.astype(np.float32),format='TIF')
+    return temp
+
+@st.cache 
+def prep_mask_download(array,format):
+    if mask['format'] == 'PNG8':
+        # fmt = '.png'
+        typ = np.uint8
+        mult = 255
+    elif mask['format'] == 'PNG16':
+        # fmt = '.png'
+        typ = np.uint16
+        mult = 65535
+    temp = io.BytesIO()
+    imageio.imwrite(temp,(array*mult).astype(typ),format='PNG')
     return temp
 
 def set_bg_hack_url():
@@ -148,7 +164,25 @@ with st.expander('Advanced Settings', expanded=False):
         dash_mult = st.slider('Dash Multiplier',1,50,20)
         road_altitude_offset = st.slider('Road Alititude Offset',-100,100,0)
         
-# Mask settings at defaults for now
+# Mask settings
+with st.expander('Mask Settings', expanded=False):
+    mask_names = ['road','shoulder','shoulder_fade','road_and_shlder_fade','verge','center_line','center_dashes','side_lines','cut','fill']
+    mask_info = {}
+    for mask in mask_names:
+        mask_info[mask] = {}
+        mask_info[mask]['name'] = mask
+        cols = st.columns(5)
+        with cols[0]:
+            mask_info[mask]['active'] = st.checkbox(mask.replace('_',' ').replace('and','&').title())
+        with cols[1]:
+            mask_info[mask]['blur'] = st.number_input('Blur',1,10,2,key='blur'+mask)
+        with cols[2]:
+            mask_info[mask]['upscale'] = st.number_input('Upscale',1,5,1,key='upscale'+mask)
+        with cols[3]:
+            mask_info[mask]['format'] = st.selectbox('Format',['PNG16','PNG8'],key='format'+mask)
+        with cols[4]:
+            st.write('Resolution')
+        
 texture_upscale = 1
       
 generate = st.button('Process Road')
@@ -157,7 +191,7 @@ if generate:
     # Read Terrain
     print('Importing Terrain')
     st.write('Importing Terrain')
-    mat = load_array(file_name_ter)
+    mat = deepcopy(load_array(file_name_ter))
     
     mat0 = np.copy(mat)
     st.write(mat.shape)
@@ -196,19 +230,12 @@ if generate:
     # Smooth elevation along road path
     roadsmth = ndimage.gaussian_filter1d(pathval, elevation_smoothing)
     
-    # Setup masks
-    # mask_info = {}
-    # for mask in mask_names:
-    #     mask_info[mask] = {}
-    #     mask_info[mask]['name'] = mask
-    #     mask_info[mask]['upscale'] = values[mask+'scale']
-    #     mask_info[mask]['blur'] = values[mask+'blur']
-    #     mask_info[mask]['active'] = values[mask+'check']
-    #     mask_info[mask]['format'] = values[mask+'format']
-    #     if mask in ['road','center_line','center_dashes','side_lines','verge']:
-    #         mask_info[mask]['mat'] = np.zeros(np.multiply(mat.shape,mask_info[mask]['upscale']))
-    #     else:
-    #         mask_info[mask]['mat'] = np.zeros(mat.shape)
+    # More mask setup
+    for mask in mask_names:
+        if mask in ['road','center_line','center_dashes','side_lines','verge']:
+            mask_info[mask]['mat'] = np.zeros(np.multiply(mat.shape,mask_info[mask]['upscale']))
+        else:
+            mask_info[mask]['mat'] = np.zeros(mat.shape)
     
     # Get road and shoulder surfaces
     fmask = np.zeros(mat.shape)
@@ -225,11 +252,7 @@ if generate:
     
     st.write('Processing Road')
     pbar = st.progress(0)
-    # window['STATUS'].update('Building Road')
     for i in range(len(rL)):
-        # progress = sg.OneLineProgressMeter('Road Progress', i+1, len(rL),  '', 'Building Road',orientation='h',key='build_progress')
-        # if progress == False:
-        #     break
         pbar.progress(i/len(rL))
         
         # Shoulder
@@ -242,7 +265,7 @@ if generate:
         bpy2 = np.flip(np.imag(bp2))
         rsy,rsx = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)-1)
         rss = np.c_[rsx,rsy]
-        # mask_info[mask]['mat'][rsx,rsy] = 1
+        mask_info[mask]['mat'][rsx,rsy] = 1
         rbmask[rsx,rsy] = 1
         
         # Verge
@@ -254,13 +277,13 @@ if generate:
         bpx2 = np.flip(np.real(bp2))
         bpy2 = np.flip(np.imag(bp2))
         # Higher res road surface
-        # texture_upscale = mask_info[mask]['upscale']
+        texture_upscale = mask_info[mask]['upscale']
         bpx1 = bpx1 * texture_upscale
         bpx2 = bpx2 * texture_upscale
         bpy1 = bpy1 * texture_upscale
         bpy2 = bpy2 * texture_upscale
         rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
-        # mask_info[mask]['mat'][rsxBig,rsyBig] = 1
+        mask_info[mask]['mat'][rsxBig,rsyBig] = 1
         
         # Road Surface
         mask = 'road'
@@ -275,14 +298,13 @@ if generate:
         rmask[rsx,rsy] = 1
         rbmask[rsx,rsy] = 1
         # Higher res road surface
-        # texture_upscale = mask_info[mask]['upscale']
+        texture_upscale = mask_info[mask]['upscale']
         bpx1 = bpx1 * texture_upscale
         bpx2 = bpx2 * texture_upscale
         bpy1 = bpy1 * texture_upscale
         bpy2 = bpy2 * texture_upscale
         rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
-        # mask_info[mask]['mat'][rsxBig,rsyBig] = 1
-        # rmaskBig[rsxBig,rsyBig] = 1
+        mask_info[mask]['mat'][rsxBig,rsyBig] = 1
         
         # Get shoulder distances to center line
         dist_s = distance.cdist(np.c_[rss[:,1],rss[:,0]],road,'euclidean')
@@ -295,9 +317,8 @@ if generate:
         ffull = 1-minmax_scale(dist_min)
         fade = 1-clamped_scaled
         fmask[rss[:,0],rss[:,1]] = fade
-        # mask_info['shoulder_fade']['mat'][rss[:,0],rss[:,1]] = fade
-        # ffmask[rss[:,0],rss[:,1]] = ffull
-        # mask_info['road_and_shlder_fade']['mat'][rss[:,0],rss[:,1]] = ffull
+        mask_info['shoulder_fade']['mat'][rss[:,0],rss[:,1]] = fade
+        mask_info['road_and_shlder_fade']['mat'][rss[:,0],rss[:,1]] = ffull
         
         # Get road surface distances to center line (TODO: REDUNDANT, TAKE DISTANCES FROM ABOVE)
         dist_r = distance.cdist(np.c_[rs[:,1],rs[:,0]],road,'euclidean')
@@ -311,18 +332,99 @@ if generate:
         
         # Filter for cut and fill masks
         cutidx = mat[rss[:,0],rss[:,1]] > roadsmth[idx_min]
-        # cutmask[rss[cutidx,0],rss[cutidx,1]] = 1
-        # mask_info['cut']['mat'][rss[cutidx,0],rss[cutidx,1]] = 1
+        mask_info['cut']['mat'][rss[cutidx,0],rss[cutidx,1]] = 1
         fillidx = mat[rss[:,0],rss[:,1]] < roadsmth[idx_min]
-        # fillmask[rss[fillidx,0],rss[fillidx,1]] = 1
-        # mask_info['fill']['mat'][rss[fillidx,0],rss[fillidx,1]] = 1
+        mask_info['fill']['mat'][rss[fillidx,0],rss[fillidx,1]] = 1
         
         # Apply road surface
         mat[rsx,rsy] = hvals
         
+    # Road textures
+    st.write('Starting Textures')
+    
+    # Road Markings
+    st.write('Dashing center line')
+    rcL = offset_curve(P,center_line_width/2,edge_segments*dash_mult)
+    rcR = offset_curve(P,-center_line_width/2,edge_segments*dash_mult)   
+    dash = np.zeros(len(rcL))
+    dash[0:-1:dash_spacing] = 1
+    rsLL = offset_curve(P,side_line_offset+side_line_width/2,edge_segments*dash_mult)
+    rsLR = offset_curve(P,side_line_offset-side_line_width/2,edge_segments*dash_mult)
+    rsRL = offset_curve(P,-side_line_offset+side_line_width/2,edge_segments*dash_mult)
+    rsRR = offset_curve(P,-side_line_offset-side_line_width/2,edge_segments*dash_mult)
+    pbar = st.progress(0)
+    for i in range(len(rcL)):
+        pbar.progress(i/len(rcL))
+        # Center Line
+        mask = 'center_line'
+        bp1 = rcL[i].point(np.linspace(0,1,3))
+        bpx1 = np.real(bp1)
+        bpy1 = np.imag(bp1)
+        bp2 = rcR[i].point(np.linspace(0,1,3))
+        bpx2 = np.flip(np.real(bp2))
+        bpy2 = np.flip(np.imag(bp2))
+        # Higher res center line
+        texture_upscale = mask_info[mask]['upscale']
+        bpx1 = bpx1 * texture_upscale
+        bpx2 = bpx2 * texture_upscale
+        bpy1 = bpy1 * texture_upscale
+        bpy2 = bpy2 * texture_upscale
+        rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
+        mask_info['center_line']['mat'][rsxBig,rsyBig] = 1
+        
+        # Center Line with dashes
+        mask = 'center_dashes'
+        bp1 = rcL[i].point(np.linspace(0,1,3))
+        bpx1 = np.real(bp1)
+        bpy1 = np.imag(bp1)
+        bp2 = rcR[i].point(np.linspace(0,1,3))
+        bpx2 = np.flip(np.real(bp2))
+        bpy2 = np.flip(np.imag(bp2))
+        # Higher res center line
+        texture_upscale = mask_info[mask]['upscale']
+        bpx1 = bpx1 * texture_upscale
+        bpx2 = bpx2 * texture_upscale
+        bpy1 = bpy1 * texture_upscale
+        bpy2 = bpy2 * texture_upscale
+        rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
+        mask_info['center_dashes']['mat'][rsxBig,rsyBig] = 1*dash[i]
+        
+        # Side Line Left
+        mask = 'side_lines'
+        bp1 = rsLL[i].point(np.linspace(0,1,3))
+        bpx1 = np.real(bp1)
+        bpy1 = np.imag(bp1)
+        bp2 = rsLR[i].point(np.linspace(0,1,3))
+        bpx2 = np.flip(np.real(bp2))
+        bpy2 = np.flip(np.imag(bp2))
+        # Higher res line
+        texture_upscale = mask_info[mask]['upscale']
+        bpx1 = bpx1 * texture_upscale
+        bpx2 = bpx2 * texture_upscale
+        bpy1 = bpy1 * texture_upscale
+        bpy2 = bpy2 * texture_upscale
+        rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
+        mask_info['side_lines']['mat'][rsxBig,rsyBig] = 1
+        
+        # Side Line Right
+        mask = 'side_lines'
+        bp1 = rsRL[i].point(np.linspace(0,1,3))
+        bpx1 = np.real(bp1)
+        bpy1 = np.imag(bp1)
+        bp2 = rsRR[i].point(np.linspace(0,1,3))
+        bpx2 = np.flip(np.real(bp2))
+        bpy2 = np.flip(np.imag(bp2))
+        # Higher res 
+        texture_upscale = mask_info[mask]['upscale']
+        bpx1 = bpx1 * texture_upscale
+        bpx2 = bpx2 * texture_upscale
+        bpy1 = bpy1 * texture_upscale
+        bpy2 = bpy2 * texture_upscale
+        rsyBig,rsxBig = np.clip(polygon(np.concatenate([bpx1,bpx2]),np.concatenate([bpy1,bpy2])),0,len(mat)*texture_upscale-1)
+        mask_info['side_lines']['mat'][rsxBig,rsyBig] = 1
+        
     # Smooth road surface and shoulder
     st.write('Smoothing Road Surface')
-    # window['STATUS'].update('Smoothing Road Surface')
     mat_blur = gaussian_filter(mat,sigma=shoulder_smoothing)
     mat = np.where(rbmask>0,mat_blur,mat)
     mix_mask = np.maximum(fmask,rmask)
@@ -331,8 +433,66 @@ if generate:
     # Write Terrain
     st.write('Exporting Terrain')
     
+    zip_buffer = io.BytesIO()
+    zipList = []
+    
     temp_ter = prep_array_download(mat_out)
-    st.download_button('Download Finished Terrain', temp_ter.getvalue(),'terrain_with_road.tif')
+    zipList.append([temp_ter,'terrain_with_road.tif'])
+    # st.download_button('Download Finished Terrain', temp_ter.getvalue(),'terrain_with_road.tif')
+    
+    # Upscale remaining masks
+    for mask_name in mask_info:
+        if mask_name not in ['road','center_line','center_dashes','side_lines','verge']:
+            mask = mask_info[mask_name]
+            mask['mat'] = resize(mask['mat'],np.multiply(mat.shape,mask['upscale']))
+    
+    # Blur masks
+    st.write('Blurring Masks')
+    for mask_name in mask_info:
+        mask = mask_info[mask_name]
+        if mask['active']:
+            print('Blurring ' + mask_name)
+            mask['mat'] = gaussian_filter(mask['mat'],mask['blur'])
+    
+    # Write Masks
+    st.write('Exporting Masks')
+    # window['STATUS'].update('Exporting Masks')
+    # # TODO: Only create needed masks
+    for mask_name in mask_info:
+        mask = mask_info[mask_name]
+        print('Saving Mask: ' + mask['name'])
+        if mask['active']:
+            if mask['format'] == 'PNG8':
+                fmt = '.png'
+            elif mask['format'] == 'PNG16':
+                fmt = '.png'
+            filename = 'masks_' + mask['name'] + fmt
+            # array = mask_arrays[mask]
+            mask['temp'] = prep_mask_download(mask['mat'],mask['format'])
+            zipList.append([mask['temp'],filename])
+            # st.download_button('Download ' + mask['name'], mask['temp'].getvalue(),filename)
+            # imageio.imwrite(join(path,filename),(mask['mat']*mult).astype(typ))
+            
+    # writing files to a zipfile
+    with ZipFile(zip_buffer, 'w') as zip_file:
+        with tempfile.TemporaryDirectory() as tmp:
+            # writing each file one by one
+            for file_and_name in zipList:
+                with open(os.path.join(tmp,file_and_name[1]),"wb") as f:
+                    f.write(file_and_name[0].getbuffer())
+                zip_file.write(os.path.join(tmp,file_and_name[1]),file_and_name[1])
+            
+    # with tempfile.TemporaryDirectory() as tmp:
+    #     with open(os.path.join(tmp,'temp_file.svg'),"wb") as f:
+    #         f.write(file_name_road.getbuffer())
+    #     paths, attributes, svg_attributes = svg2paths2(os.path.join(tmp,'temp_file.svg'))
+            
+    st.write('Done')
+    
+    st.download_button("Download Road Files", zip_buffer, "terrain_and_masks.zip")
+    
+    
+    
     
 # Mask Settings
 # with st.expander('Mask Settings', expanded=False): 
