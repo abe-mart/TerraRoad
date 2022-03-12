@@ -49,13 +49,13 @@ def offset_curve(path, offset_distance, steps=1000):
     return offset_path
 
 # Streamlit image reading and writing (with caches for performance)
-@st.cache
+# @st.cache
 def load_image(image_file):
     array = imageio.imread(image_file)
     img = Image.fromarray(array).convert('RGB')
     return img
 
-@st.cache
+# @st.cache
 def load_array(image_file):
     # st.write(image_file)
     array = imageio.imread(image_file)
@@ -70,27 +70,27 @@ def load_svg(svg_file):
         paths, attributes, svg_attributes = svg2paths2(os.path.join(tmp,'temp_file.svg'))
     return paths, attributes, svg_attributes
 
-@st.cache
+# @st.cache
 def prep_jpg_download(image):
     temp = io.BytesIO()
     image.save(temp, format="jpeg")
     return temp
 
-@st.cache 
+# @st.cache 
 def prep_exr_download(image_file):
     array = imageio.imread(image_file)
     temp = io.BytesIO()
     imageio.imwrite(temp,array.astype(np.float32),format='EXR')
     return temp
 
-@st.cache 
+# @st.cache 
 def prep_array_download(array):
     # array = imageio.imread(image_file)
     temp = io.BytesIO()
     imageio.imwrite(temp,array.astype(np.float32),format='TIF')
     return temp
 
-@st.cache 
+# @st.cache 
 def prep_mask_download(array,format):
     if mask['format'] == 'PNG8':
         # fmt = '.png'
