@@ -175,9 +175,9 @@ with st.expander('Mask Settings', expanded=False):
         with cols[0]:
             mask_info[mask]['active'] = st.checkbox(mask.replace('_',' ').replace('and','&').title())
         with cols[1]:
-            mask_info[mask]['blur'] = st.number_input('Blur',1,10,2.0,key='blur'+mask)
+            mask_info[mask]['blur'] = st.number_input('Blur',1.0,10.0,2.0,key='blur'+mask)
         with cols[2]:
-            mask_info[mask]['upscale'] = st.number_input('Upscale',1,5,1.0,key='upscale'+mask)
+            mask_info[mask]['upscale'] = st.number_input('Upscale',1.0,5.0,1.0,key='upscale'+mask)
         with cols[3]:
             mask_info[mask]['format'] = st.selectbox('Format',['PNG16','PNG8'],key='format'+mask)
         with cols[4]:
