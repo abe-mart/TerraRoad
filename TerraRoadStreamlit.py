@@ -185,24 +185,24 @@ with st.expander('Mask Settings', expanded=False):
               
 generate = st.button('Process Road')
 if generate:
+    placeholder = st.empty()
     
     # Read Terrain
     print('Importing Terrain')
-    st.write('Importing Terrain')
-    mat = deepcopy(load_array(file_name_ter))
+    placeholder.text('Importing Terrain')
+    mat = load_array(file_name_ter)
     
     mat0 = np.copy(mat)
-    st.write(mat.shape)
     
     # Read Road path vector
     print('Importing Road Path')
-    st.write('Importing Road Path')
+    placeholder.text('Importing Road Path')
     paths, attributes, svg_attributes = load_svg(file_name_road)
     P = paths[0]
     
     # Sample pixels along path
     print('Extracting center line')
-    st.write('Extracting center line')
+    placeholder.text('Extracting center line')
     rx = []
     ry = []
     for b in P:
@@ -251,7 +251,7 @@ if generate:
     vL = offset_curve(P,verge_width/2,edge_segments)
     vR = offset_curve(P,-verge_width/2,edge_segments)
     
-    st.write('Processing Road')
+    placeholder.text('Processing Road')
     pbar = st.progress(0)
     for i in range(len(rL)):
         pbar.progress(i/len(rL))
